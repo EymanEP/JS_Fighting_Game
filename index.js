@@ -1,25 +1,35 @@
 //Variables from index.html
-const canvas = document.querySelector('canvas')
-const c = canvas.getContext('2d')
+const CANVAS = document.querySelector('canvas')
+const c = CANVAS.getContext('2d')
 //canvas height and width
-canvas.width = 1024
-canvas.height = 576
+CANVAS.width = 1024
+CANVAS.height = 576
 //Fill the canvas and set its width and height
-c.fillRect(0,0, canvas.width, canvas.height)
+c.fillRect(0,0, CANVAS.width, CANVAS.height)
 //Gravity
-const gravity = 0.2
+const GRAVITY = 0.7
 //Sprite object
 class Sprite {
-    constructor({position, velocity}) {
+    constructor({position, velocity, color = 'blue'}) {
         this.position = position
         this.velocity = velocity
         this.height = 150
         this.lastKey
+        this.attackBox = {
+            position: this.position ,
+            width: 100,
+            height: 50
+        }
+        this.color = color
     }
     //Function to draw the sprite with the constructor properties
     draw(){
-        c.fillStyle = 'blue'
+        //Sprite object is drawn here
+        c.fillStyle = this.color
         c.fillRect(this.position.x, this.position.y, 50, this.height)
+        //AttackBox is drawn here
+        c.fillStyle = 'yellow'
+        c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
     }
     //Function to update the sprite
     update() {
@@ -28,15 +38,15 @@ class Sprite {
         this.position.x += this.velocity.x
         this.position.y += this.velocity.y
         //Bottom border to not fall through the ground
-        if(this.position.y + this.height + this.velocity.y >= canvas.height) {
+        if(this.position.y + this.height + this.velocity.y >= CANVAS.height) {
             this.velocity.y = 0
         } else {
-            this.velocity.y += gravity
+            this.velocity.y += GRAVITY
         }
     }
 }
 //Use the sprite object for the player
-const player = new Sprite({
+const PLAYER = new Sprite({
     //Starting position
     position: {
         x: 0,
@@ -49,7 +59,7 @@ const player = new Sprite({
     }
 })
 //Using the sprite object for the enemy
-const enemy = new Sprite({
+const ENEMY = new Sprite({
     //Starting position
     position: {
         x: 300,
@@ -59,7 +69,8 @@ const enemy = new Sprite({
     velocity: {
         x: 0,
         y: 0
-    }
+    },
+    color: 'red'
 })
 
 //List for the pressed property on the following keys
@@ -85,30 +96,33 @@ const keys = {
         pressed: false
     }
 }
-//Track the las key pressed
-let lastKey
 //Function for the "update" loop mechanic
 function animate() {
     window.requestAnimationFrame(animate)
     c.fillStyle = 'black'
-    c.fillRect(0,0,canvas.width, canvas.height)
-    player.update()
-    enemy.update()
+    c.fillRect(0,0,CANVAS.width, CANVAS.height)
+    PLAYER.update()
+    ENEMY.update()
     //Default player velocity is 0
-    player.velocity.x = 0
-    //Player movement
-    if (keys.a.pressed && lastKey === 'a') {
-        player.velocity.x = -1
-    } else if (keys.d.pressed && lastKey === 'd') {
-        player.velocity.x = 1
-    }
+    PLAYER.velocity.x = 0
     //Default velocity of 0
-    enemy.velocity.x = 0
+    ENEMY.velocity.x = 0
+    //Player movement
+    if (keys.a.pressed && PLAYER.lastKey === 'a') {
+        PLAYER.velocity.x = -5
+    } else if (keys.d.pressed && PLAYER.lastKey === 'd') {
+        PLAYER.velocity.x = 5
+    }
     //Enemy movement
-    if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
-        enemy.velocity.x = -1
-    } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
-        enemy.velocity.x = 1
+    if (keys.ArrowLeft.pressed && ENEMY.lastKey === 'ArrowLeft') {
+        ENEMY.velocity.x = -5
+    } else if (keys.ArrowRight.pressed && ENEMY.lastKey === 'ArrowRight') {
+        ENEMY.velocity.x = 5
+    }
+
+    //Detect for collision
+    if (PLAYER.attackBox.position.x + PLAYER.attackBox.width >= ENEMY.position.x) {
+        console.log('colliding')
     }
 }
 
@@ -119,26 +133,26 @@ window.addEventListener('keydown', (event) => {
     switch (event.key) {
         case 'd':
             keys.d.pressed = true
-            lastKey = 'd'
+            PLAYER.lastKey = 'd'
             break
         case 'a':
             keys.a.pressed = true
-            lastKey = 'a'
+            PLAYER.lastKey = 'a'
             break
         case 'w':
-            player.velocity.y = -10
+            PLAYER.velocity.y = -20
             break
 
         case 'ArrowRight':
             keys.ArrowRight.pressed = true
-            enemy.lastKey = 'ArrowRight'
+            ENEMY.lastKey = 'ArrowRight'
             break
         case 'ArrowLeft':
-            keys.ArrowRight.pressed = true
-            enemy.lastKey = 'ArrowLeft'
+            keys.ArrowLeft.pressed = true
+            ENEMY.lastKey = 'ArrowLeft'
             break
         case 'ArrowUp':
-            enemy.velocity.y = -10
+            ENEMY.velocity.y = -20
             break
     }
 })
