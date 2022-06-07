@@ -10,29 +10,40 @@ c.fillRect(0,0, CANVAS.width, CANVAS.height)
 const GRAVITY = 0.7
 //Sprite object
 class Sprite {
-    constructor({position, velocity, color = 'blue'}) {
+    constructor({position, velocity, color = 'blue', offset}) {
         this.position = position
         this.velocity = velocity
         this.height = 150
+        this.width = 50
         this.lastKey
         this.attackBox = {
-            position: this.position ,
+            position: {
+                x: this.position.x,
+                y: this.position.y
+            },
+            offset,
             width: 100,
             height: 50
         }
         this.color = color
+        this.isAttacking
     }
     //Function to draw the sprite with the constructor properties
     draw(){
         //Sprite object is drawn here
         c.fillStyle = this.color
-        c.fillRect(this.position.x, this.position.y, 50, this.height)
+        c.fillRect(this.position.x, this.position.y, this.width, this.height)
         //AttackBox is drawn here
-        c.fillStyle = 'yellow'
-        c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        if (this.isAttacking) {
+            c.fillStyle = 'yellow'
+            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        }
     }
     //Function to update the sprite
     update() {
+        //Attack box to follow the player position
+        this.attackBox.position.x = this.position.x + this.attackBox.offset.x
+        this.attackBox.position.y = this.position.y
         //Draw variable and Y velocity for the gravity
         this.draw()
         this.position.x += this.velocity.x
@@ -43,6 +54,14 @@ class Sprite {
         } else {
             this.velocity.y += GRAVITY
         }
+
+    }
+
+    attack() {
+        this.isAttacking = true
+        setTimeout(() => {
+            this.isAttacking = false
+        }, 100)
     }
 }
 //Use the sprite object for the player
@@ -56,6 +75,10 @@ const PLAYER = new Sprite({
     velocity: {
         x: 0,
         y: 10
+    },
+    offset: {
+        x: 0,
+        y: 0
     }
 })
 //Using the sprite object for the enemy
@@ -68,6 +91,10 @@ const ENEMY = new Sprite({
     //Velocity of the enemy
     velocity: {
         x: 0,
+        y: 0
+    },
+    offset: {
+        x: -50,
         y: 0
     },
     color: 'red'
@@ -96,6 +123,18 @@ const keys = {
         pressed: false
     }
 }
+//Detect collisions
+function rectangularCollision({ rectangle1, rectangle2 }) {
+    return (
+        rectangle1.attackBox.position.x + rectangle1.attackBox.width >= rectangle2.position.x
+        //Detect if collider has already crossed the enemy
+        && rectangle1.attackBox.position.x <= rectangle2.position.x + rectangle2.width
+        //Detect for collisions on the y axis
+        && rectangle1.attackBox.position.y + rectangle1.attackBox.height >= rectangle2.position.y
+        && rectangle1.attackBox.position.y <= rectangle2.position.y + rectangle2.height
+    )
+}
+
 //Function for the "update" loop mechanic
 function animate() {
     window.requestAnimationFrame(animate)
@@ -121,15 +160,28 @@ function animate() {
     }
 
     //Detect for collision
-    if (PLAYER.attackBox.position.x + PLAYER.attackBox.width >= ENEMY.position.x) {
-        console.log('colliding')
+    if (rectangularCollision({
+            rectangle1: PLAYER,
+            rectangle2: ENEMY
+    })
+        && PLAYER.isAttacking) {
+        PLAYER.isAttacking = false
+        console.log('Player attack colliding')
+    }
+
+    if (rectangularCollision({
+            rectangle1: ENEMY,
+            rectangle2: PLAYER
+        })
+        && ENEMY.isAttacking) {
+        ENEMY.isAttacking = false
+        console.log('Enemy attack colliding')
     }
 }
 
 animate();
 //Event listener for the controls
 window.addEventListener('keydown', (event) => {
-    console.log(event.key)
     switch (event.key) {
         case 'd':
             keys.d.pressed = true
@@ -142,6 +194,9 @@ window.addEventListener('keydown', (event) => {
         case 'w':
             PLAYER.velocity.y = -20
             break
+        case ' ':
+            PLAYER.attack()
+            break
 
         case 'ArrowRight':
             keys.ArrowRight.pressed = true
@@ -153,6 +208,9 @@ window.addEventListener('keydown', (event) => {
             break
         case 'ArrowUp':
             ENEMY.velocity.y = -20
+            break
+        case 'ArrowDown':
+            ENEMY.attack()
             break
     }
 })
