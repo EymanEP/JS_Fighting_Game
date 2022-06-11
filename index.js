@@ -27,6 +27,7 @@ class Sprite {
         }
         this.color = color
         this.isAttacking
+        this.health = 100
     }
     //Function to draw the sprite with the constructor properties
     draw(){
@@ -36,7 +37,8 @@ class Sprite {
         //AttackBox is drawn here
         if (this.isAttacking) {
             c.fillStyle = 'yellow'
-            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+            c.fillRect(this.attackBox.position.x, this.attackBox.position.y,
+                this.attackBox.width, this.attackBox.height);
         }
     }
     //Function to update the sprite
@@ -56,7 +58,7 @@ class Sprite {
         }
 
     }
-
+    //Attack function
     attack() {
         this.isAttacking = true
         setTimeout(() => {
@@ -134,6 +136,39 @@ function rectangularCollision({ rectangle1, rectangle2 }) {
         && rectangle1.attackBox.position.y <= rectangle2.position.y + rectangle2.height
     )
 }
+//Boolean variable for the Game Over part
+let isGameOVer = false
+//Function to determine the Winner
+function determineWinner({PLAYER, ENEMY, timerID}) {
+    clearTimeout(timerID)
+    document.querySelector("#displayText").style.display = 'flex'
+    if (PLAYER.health === ENEMY.health) {
+        document.querySelector("#displayText").innerHTML = 'TIE'
+    } else if (PLAYER.health > ENEMY.health) {
+        document.querySelector("#displayText").innerHTML = 'PLAYER 1 Wins'
+    } else if (PLAYER.health < ENEMY.health) {
+        document.querySelector("#displayText").innerHTML = 'PLAYER 2 Wins'
+    }
+    isGameOVer = true
+}
+//Timer variable
+let timer = 60
+let timerID
+//Actual Timer function
+function decreaseTimer() {
+    //Decrease time
+    if (timer > 0) {
+        timerID = setTimeout(decreaseTimer, 1000)
+        timer--;
+        document.querySelector("#timer").innerHTML = timer
+    }
+    //End game based on time
+    if (timer === 0) {
+        determineWinner({PLAYER, ENEMY})
+    }
+}
+
+decreaseTimer()
 
 //Function for the "update" loop mechanic
 function animate() {
@@ -146,36 +181,58 @@ function animate() {
     PLAYER.velocity.x = 0
     //Default velocity of 0
     ENEMY.velocity.x = 0
-    //Player movement
-    if (keys.a.pressed && PLAYER.lastKey === 'a') {
-        PLAYER.velocity.x = -5
-    } else if (keys.d.pressed && PLAYER.lastKey === 'd') {
-        PLAYER.velocity.x = 5
-    }
-    //Enemy movement
-    if (keys.ArrowLeft.pressed && ENEMY.lastKey === 'ArrowLeft') {
-        ENEMY.velocity.x = -5
-    } else if (keys.ArrowRight.pressed && ENEMY.lastKey === 'ArrowRight') {
-        ENEMY.velocity.x = 5
+    if (!isGameOVer) {
+        //Player movement
+        if (keys.a.pressed && PLAYER.lastKey === 'a') {
+            PLAYER.velocity.x = -5
+        } else if (keys.d.pressed && PLAYER.lastKey === 'd') {
+            PLAYER.velocity.x = 5
+        }
+        //Enemy movement
+        if (keys.ArrowLeft.pressed && ENEMY.lastKey === 'ArrowLeft') {
+            ENEMY.velocity.x = -5
+        } else if (keys.ArrowRight.pressed && ENEMY.lastKey === 'ArrowRight') {
+            ENEMY.velocity.x = 5
+        }
+    } else if (isGameOVer) {
+        if (keys.a.pressed && PLAYER.lastKey === 'a') {
+            PLAYER.velocity.x = 0
+        } else if (keys.d.pressed && PLAYER.lastKey === 'd') {
+            PLAYER.velocity.x = 0
+        }
+        //Enemy movement
+        if (keys.ArrowLeft.pressed && ENEMY.lastKey === 'ArrowLeft') {
+            ENEMY.velocity.x = 0
+        } else if (keys.ArrowRight.pressed && ENEMY.lastKey === 'ArrowRight') {
+            ENEMY.velocity.x = 0
+        }
     }
 
     //Detect for collision
+    //PLAYER attack Collisions
     if (rectangularCollision({
             rectangle1: PLAYER,
             rectangle2: ENEMY
     })
         && PLAYER.isAttacking) {
         PLAYER.isAttacking = false
-        console.log('Player attack colliding')
+        ENEMY.health -= 10
+        document.querySelector('#enemyHealth').style.width = ENEMY.health + '%'
     }
-
+    //ENEMY attack Collisions
     if (rectangularCollision({
             rectangle1: ENEMY,
             rectangle2: PLAYER
         })
         && ENEMY.isAttacking) {
         ENEMY.isAttacking = false
-        console.log('Enemy attack colliding')
+        PLAYER.health -= 10
+        document.querySelector('#playerHealth').style.width = PLAYER.health + '%'
+    }
+
+    //End game based on health
+    if (ENEMY.health <= 0 || PLAYER.health <= 0) {
+        determineWinner({PLAYER, ENEMY, timerID})
     }
 }
 
@@ -192,10 +249,14 @@ window.addEventListener('keydown', (event) => {
             PLAYER.lastKey = 'a'
             break
         case 'w':
-            PLAYER.velocity.y = -20
+            if (!isGameOVer) {
+                PLAYER.velocity.y = -20
+            }
             break
         case ' ':
-            PLAYER.attack()
+            if (!isGameOVer) {
+                PLAYER.attack()
+            }
             break
 
         case 'ArrowRight':
@@ -207,10 +268,14 @@ window.addEventListener('keydown', (event) => {
             ENEMY.lastKey = 'ArrowLeft'
             break
         case 'ArrowUp':
-            ENEMY.velocity.y = -20
+            if (!isGameOVer) {
+                ENEMY.velocity.y = -20;
+            }
             break
         case 'ArrowDown':
-            ENEMY.attack()
+            if (!isGameOVer) {
+                ENEMY.attack()
+            }
             break
     }
 })
