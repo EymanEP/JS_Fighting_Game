@@ -8,66 +8,16 @@ CANVAS.height = 576
 c.fillRect(0,0, CANVAS.width, CANVAS.height)
 //Gravity
 const GRAVITY = 0.7
-//Sprite object
-class Sprite {
-    constructor({position, velocity, color = 'blue', offset}) {
-        this.position = position
-        this.velocity = velocity
-        this.height = 150
-        this.width = 50
-        this.lastKey
-        this.attackBox = {
-            position: {
-                x: this.position.x,
-                y: this.position.y
-            },
-            offset,
-            width: 100,
-            height: 50
-        }
-        this.color = color
-        this.isAttacking
-        this.health = 100
-    }
-    //Function to draw the sprite with the constructor properties
-    draw(){
-        //Sprite object is drawn here
-        c.fillStyle = this.color
-        c.fillRect(this.position.x, this.position.y, this.width, this.height)
-        //AttackBox is drawn here
-        if (this.isAttacking) {
-            c.fillStyle = 'yellow'
-            c.fillRect(this.attackBox.position.x, this.attackBox.position.y,
-                this.attackBox.width, this.attackBox.height);
-        }
-    }
-    //Function to update the sprite
-    update() {
-        //Attack box to follow the player position
-        this.attackBox.position.x = this.position.x + this.attackBox.offset.x
-        this.attackBox.position.y = this.position.y
-        //Draw variable and Y velocity for the gravity
-        this.draw()
-        this.position.x += this.velocity.x
-        this.position.y += this.velocity.y
-        //Bottom border to not fall through the ground
-        if(this.position.y + this.height + this.velocity.y >= CANVAS.height) {
-            this.velocity.y = 0
-        } else {
-            this.velocity.y += GRAVITY
-        }
-
-    }
-    //Attack function
-    attack() {
-        this.isAttacking = true
-        setTimeout(() => {
-            this.isAttacking = false
-        }, 100)
-    }
-}
-//Use the sprite object for the player
-const PLAYER = new Sprite({
+//Background
+const BACKGROUND = new Sprite({
+    position: {
+        x: 0,
+        y: 0
+    },
+    imageSrc: './img/background.png'
+})
+//Use the Fighter object for the player
+const PLAYER = new Fighter ({
     //Starting position
     position: {
         x: 0,
@@ -83,8 +33,8 @@ const PLAYER = new Sprite({
         y: 0
     }
 })
-//Using the sprite object for the enemy
-const ENEMY = new Sprite({
+//Using the Fighter object for the enemy
+const ENEMY = new Fighter ({
     //Starting position
     position: {
         x: 300,
@@ -125,49 +75,7 @@ const keys = {
         pressed: false
     }
 }
-//Detect collisions
-function rectangularCollision({ rectangle1, rectangle2 }) {
-    return (
-        rectangle1.attackBox.position.x + rectangle1.attackBox.width >= rectangle2.position.x
-        //Detect if collider has already crossed the enemy
-        && rectangle1.attackBox.position.x <= rectangle2.position.x + rectangle2.width
-        //Detect for collisions on the y axis
-        && rectangle1.attackBox.position.y + rectangle1.attackBox.height >= rectangle2.position.y
-        && rectangle1.attackBox.position.y <= rectangle2.position.y + rectangle2.height
-    )
-}
-//Boolean variable for the Game Over part
-let isGameOVer = false
-//Function to determine the Winner
-function determineWinner({PLAYER, ENEMY, timerID}) {
-    clearTimeout(timerID)
-    document.querySelector("#displayText").style.display = 'flex'
-    if (PLAYER.health === ENEMY.health) {
-        document.querySelector("#displayText").innerHTML = 'TIE'
-    } else if (PLAYER.health > ENEMY.health) {
-        document.querySelector("#displayText").innerHTML = 'PLAYER 1 Wins'
-    } else if (PLAYER.health < ENEMY.health) {
-        document.querySelector("#displayText").innerHTML = 'PLAYER 2 Wins'
-    }
-    isGameOVer = true
-}
-//Timer variable
-let timer = 60
-let timerID
-//Actual Timer function
-function decreaseTimer() {
-    //Decrease time
-    if (timer > 0) {
-        timerID = setTimeout(decreaseTimer, 1000)
-        timer--;
-        document.querySelector("#timer").innerHTML = timer
-    }
-    //End game based on time
-    if (timer === 0) {
-        determineWinner({PLAYER, ENEMY})
-    }
-}
-
+//Timer function
 decreaseTimer()
 
 //Function for the "update" loop mechanic
@@ -175,6 +83,8 @@ function animate() {
     window.requestAnimationFrame(animate)
     c.fillStyle = 'black'
     c.fillRect(0,0,CANVAS.width, CANVAS.height)
+    BACKGROUND.update()
+    //Update fighters
     PLAYER.update()
     ENEMY.update()
     //Default player velocity is 0
